@@ -1,0 +1,255 @@
+[
+  {
+    "audio_url": "https://ottoaudio.s3.ap-southeast-2.amazonaws.com/recordings/43ccc787-7f07-4a13-ac9d-d672d25a809c/4043504735.mp3",
+    "prod_call_id": null,
+    "staging_call_id": "audio_test_1_retry_afdfd01b",
+    "staging_status": "completed",
+    "issues": [],
+    "verdict": "PASS"
+  },
+  {
+    "audio_url": "https://ottoaudio.s3.ap-southeast-2.amazonaws.com/recordings/1fd7bea5-9ace-4e8f-a31f-152ea8269927/4015296617.mp3",
+    "prod_call_id": "report_test_696c8ac0de10",
+    "staging_call_id": "staging_run_fb9742d73dab",
+    "staging_status": "completed",
+    "issues": [],
+    "verdict": "PASS"
+  },
+  {
+    "audio_url": "https://ottoaudio.s3.ap-southeast-2.amazonaws.com/recordings/bc946fa9-1e8a-4f1e-920c-64c4369fe778/4049722733.mp3",
+    "prod_call_id": "audio_test_3_c8545cb0",
+    "staging_call_id": "audio_test_3_c37e5d95",
+    "staging_status": "completed",
+    "issues": [],
+    "verdict": "PASS"
+  },
+  {
+    "audio_url": "https://ottoaudio.s3.ap-southeast-2.amazonaws.com/recordings/e2b0dab7-a05b-4448-8c13-fa3753f405ae/4036836500.mp3",
+    "prod_call_id": "audio_test_4_d8091a92",
+    "staging_call_id": "audio_test_4_d8091a92",
+    "staging_status": "completed",
+    "issues": [],
+    "verdict": "PASS"
+  },
+  {
+    "audio_url": "https://ottoaudio.s3.ap-southeast-2.amazonaws.com/recordings/8c6b15ee-5675-4e01-8b31-ff3658126353/4049722733.mp3",
+    "prod_call_id": "test-fix-flores-001",
+    "staging_call_id": "test-fix-flores-001",
+    "staging_status": "completed",
+    "issues": [],
+    "verdict": "PASS"
+  },
+  {
+    "audio_url": "https://ottoaudio.s3.ap-southeast-2.amazonaws.com/recordings/6e37c8bb-16bc-4e17-867e-ae5e9f57c3b9/4037028977.mp3",
+    "prod_call_id": "test-fix-sandiego-002",
+    "staging_call_id": "test-fix-sandiego-002",
+    "staging_status": "completed",
+    "issues": [],
+    "verdict": "PASS"
+  },
+  {
+    "audio_url": "https://ottoaudio.s3.ap-southeast-2.amazonaws.com/recordings/56dc7e30-ffed-4f8d-80eb-b514ffb30a50/4050591020.mp3",
+    "prod_call_id": null,
+    "staging_call_id": null,
+    "staging_status": "not_found",
+    "issues": [],
+    "verdict": "PASS"
+  },
+  {
+    "audio_url": "https://ottoaudio.s3.ap-southeast-2.amazonaws.com/recordings/6566e3b9-acac-4b55-aad1-5742464107fa/4058579492.mp3",
+    "prod_call_id": "audio_test_8_5067ce6c",
+    "staging_call_id": "audio_test_8_5067ce6c",
+    "staging_status": "completed",
+    "issues": [],
+    "verdict": "PASS"
+  },
+  {
+    "audio_url": "https://ottoaudio.s3.ap-southeast-2.amazonaws.com/recordings/33cc8375-04ee-43a4-8644-bdffdb8d1b1b/4060192187.mp3",
+    "prod_call_id": "audio_test_9_bd832bdd",
+    "staging_call_id": "gemini_cmp_9_1f0378ab",
+    "staging_status": "completed",
+    "issues": [],
+    "verdict": "PASS"
+  },
+  {
+    "audio_url": "https://ottoaudio.s3.ap-southeast-2.amazonaws.com/recordings/b9a3deca-d3e1-47ad-a2ad-875e58c0b7dc/4058565425.mp3",
+    "prod_call_id": "audio_test_10_2ba27bd1",
+    "staging_call_id": "audio_test_10_56469bfa",
+    "staging_status": "completed",
+    "issues": [
+      {
+        "field": "BANT Need",
+        "severity": "Medium",
+        "type": "Score Delta",
+        "detail": "PROD=0.8 STAGING=0.5 delta=0.300 (threshold=0.2)"
+      },
+      {
+        "field": "Qualification Status",
+        "severity": "Medium",
+        "type": "Mismatch",
+        "detail": "PROD='hot' STAGING='warm'"
+      }
+    ],
+    "verdict": "PASS"
+  },
+  {
+    "audio_url": "https://ottoaudio.s3.ap-southeast-2.amazonaws.com/recordings/bd24a254-fe4e-48ef-9c3e-3c3f3adfd68c/4082148782.mp3",
+    "prod_call_id": "scenario_test_1_88148c4c",
+    "staging_call_id": "scenario_test_1_88148c4c",
+    "staging_status": "completed",
+    "issues": [],
+    "verdict": "PASS"
+  },
+  {
+    "audio_url": "https://ottoaudio.s3.ap-southeast-2.amazonaws.com/recordings/00273c23-da2c-4e1b-b49c-4ff85d4a766a/4082112377.mp3",
+    "prod_call_id": null,
+    "staging_call_id": null,
+    "staging_status": "not_found",
+    "issues": [],
+    "verdict": "PASS"
+  },
+  {
+    "audio_url": "https://ottoaudio.s3.ap-southeast-2.amazonaws.com/recordings/c0183543-60e4-434f-a247-89ec9ef8e1e3/4081871096.mp3",
+    "prod_call_id": "scenario_test_3_cc5d0fb9",
+    "staging_call_id": "scenario_test_3_cc5d0fb9",
+    "staging_status": "completed",
+    "issues": [],
+    "verdict": "PASS"
+  },
+  {
+    "audio_url": "https://ottoaudio.s3.ap-southeast-2.amazonaws.com/recordings/eb359c0a-02e2-4e94-b018-b3585c8a4024/4081765241.mp3",
+    "prod_call_id": null,
+    "staging_call_id": "gemini_cmp_14_70b9abed",
+    "staging_status": "completed",
+    "issues": [],
+    "verdict": "PASS"
+  },
+  {
+    "audio_url": "https://ottoaudio.s3.ap-southeast-2.amazonaws.com/recordings/4da88a74-f129-481d-92d4-626c5a728835/4081742162.mp3",
+    "prod_call_id": "scenario_test_5_8b5c1e22",
+    "staging_call_id": "scenario_test_5_8b5c1e22",
+    "staging_status": "completed",
+    "issues": [],
+    "verdict": "PASS"
+  },
+  {
+    "audio_url": "https://ottoaudio.s3.ap-southeast-2.amazonaws.com/recordings/c6c4fff3-72d5-42d5-9cb4-16b8272e3d3b/4079556188.mp3",
+    "prod_call_id": null,
+    "staging_call_id": null,
+    "staging_status": "not_found",
+    "issues": [],
+    "verdict": "PASS"
+  },
+  {
+    "audio_url": "https://ottoaudio.s3.ap-southeast-2.amazonaws.com/recordings/ddccb9c0-fce8-4eb5-81bd-5e738cb95979/4078581674.mp3",
+    "prod_call_id": "scenario_test_7_b228486b",
+    "staging_call_id": "scenario_test_7_b228486b",
+    "staging_status": "completed",
+    "issues": [],
+    "verdict": "PASS"
+  },
+  {
+    "audio_url": "https://ottoaudio.s3.ap-southeast-2.amazonaws.com/recordings/add722b1-c29f-4615-b389-4d29773d5958/st_309419607.mp3",
+    "prod_call_id": null,
+    "staging_call_id": null,
+    "staging_status": "not_found",
+    "issues": [],
+    "verdict": "PASS"
+  },
+  {
+    "audio_url": "https://ottoaudio.s3.ap-southeast-2.amazonaws.com/recordings/df6c19b0-5d39-457b-8053-4dd83f4407cf/4076546354.mp3",
+    "prod_call_id": "scenario_test_9_e37ecbc8",
+    "staging_call_id": "scenario_test_9_e37ecbc8",
+    "staging_status": "completed",
+    "issues": [],
+    "verdict": "PASS"
+  },
+  {
+    "audio_url": "https://ottoaudio.s3.ap-southeast-2.amazonaws.com/recordings/6dd70da4-9d39-4496-871e-827af1429e29/4077402764.mp3",
+    "prod_call_id": null,
+    "staging_call_id": null,
+    "staging_status": "not_found",
+    "issues": [],
+    "verdict": "PASS"
+  },
+  {
+    "audio_url": "https://ottoaudio.s3.ap-southeast-2.amazonaws.com/recordings/0caf5493-4ea1-4298-bee3-5ea9a83a2431/4094726633.mp3",
+    "prod_call_id": null,
+    "staging_call_id": null,
+    "staging_status": "not_found",
+    "issues": [],
+    "verdict": "PASS"
+  },
+  {
+    "audio_url": "https://ottoaudio.s3.ap-southeast-2.amazonaws.com/recordings/31047617-96e2-4b71-8167-9b6aa3acaa3e/4094713955.mp3",
+    "prod_call_id": null,
+    "staging_call_id": "audio_test_2_f5b5e2dd",
+    "staging_status": "completed",
+    "issues": [],
+    "verdict": "PASS"
+  },
+  {
+    "audio_url": "https://ottoaudio.s3.ap-southeast-2.amazonaws.com/recordings/cd5faebf-2c6b-4733-b560-e2a97eec644f/4094604863.mp3",
+    "prod_call_id": null,
+    "staging_call_id": null,
+    "staging_status": "not_found",
+    "issues": [],
+    "verdict": "PASS"
+  },
+  {
+    "audio_url": "https://ottoaudio.s3.ap-southeast-2.amazonaws.com/recordings/90684b34-3972-4abe-a56b-07633b75da39/4094588411.mp3",
+    "prod_call_id": null,
+    "staging_call_id": "audio_test_4_59a6536b",
+    "staging_status": "completed",
+    "issues": [],
+    "verdict": "PASS"
+  },
+  {
+    "audio_url": "https://ottoaudio.s3.ap-southeast-2.amazonaws.com/recordings/349c746c-0a9b-44ff-a6c3-8c052a1efd29/4094548208.mp3",
+    "prod_call_id": null,
+    "staging_call_id": null,
+    "staging_status": "not_found",
+    "issues": [],
+    "verdict": "PASS"
+  },
+  {
+    "audio_url": "https://ottoaudio.s3.ap-southeast-2.amazonaws.com/recordings/bdd04264-1591-4b4a-8aca-6f63beb79aba/4094484647.mp3",
+    "prod_call_id": null,
+    "staging_call_id": null,
+    "staging_status": "not_found",
+    "issues": [],
+    "verdict": "PASS"
+  },
+  {
+    "audio_url": "https://ottoaudio.s3.ap-southeast-2.amazonaws.com/recordings/c979ee91-9189-4473-bcae-898ddd5d0028/4094457467.mp3",
+    "prod_call_id": null,
+    "staging_call_id": "audio_test_7_e3cb63ba",
+    "staging_status": "completed",
+    "issues": [],
+    "verdict": "PASS"
+  },
+  {
+    "audio_url": "https://ottoaudio.s3.ap-southeast-2.amazonaws.com/recordings/203c3c8b-4cce-4dfe-8ef7-74c4dd9ae3db/4094238074.mp3",
+    "prod_call_id": null,
+    "staging_call_id": null,
+    "staging_status": "not_found",
+    "issues": [],
+    "verdict": "PASS"
+  },
+  {
+    "audio_url": "https://ottoaudio.s3.ap-southeast-2.amazonaws.com/recordings/1a6fa204-73b1-42e6-9adc-930a8be7196c/4093544600.mp3",
+    "prod_call_id": null,
+    "staging_call_id": "audio_test_9_201497df",
+    "staging_status": "completed",
+    "issues": [],
+    "verdict": "PASS"
+  },
+  {
+    "audio_url": "https://ottoaudio.s3.ap-southeast-2.amazonaws.com/recordings/cd8c80e2-0388-4ac7-818c-6f543bb500e8/4094042249.mp3",
+    "prod_call_id": null,
+    "staging_call_id": null,
+    "staging_status": "not_found",
+    "issues": [],
+    "verdict": "PASS"
+  }
+]
