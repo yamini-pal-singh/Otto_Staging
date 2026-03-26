@@ -131,23 +131,23 @@ def extract_rep_name(segments):
     return None
 
 
-# ─── Extract row in reference sheet format ───
+# ─── Extract row — ALL API fields ───
 
 def extract_row(summary, detail):
-    """Extract a flat dict matching the reference sheet columns."""
+    """Extract every field returned by the API into a flat dict."""
     row = {}
     if not summary: return row
 
-    s = summary.get("summary") or {}
-    q = summary.get("qualification") or {}
+    s   = summary.get("summary") or {}
+    q   = summary.get("qualification") or {}
     comp_data = summary.get("compliance") or {}
     sop = comp_data.get("sop_compliance") or {}
-    obj_data = summary.get("objections") or {}
-    lead = summary.get("lead_score") or {}
-    bant = q.get("bant_scores") or {}
+    obj_data  = summary.get("objections") or {}
+    bant  = q.get("bant_scores") or {}
     stages = sop.get("stages") or {}
+    addr  = q.get("service_address_structured") or {}
 
-    # Transcript
+    # ── Detail / transcript ──
     transcript_text = ""
     segments = []
     if detail:
@@ -162,13 +162,15 @@ def extract_row(summary, detail):
             segments = detail.get("segments", []) or []
             transcript_text = "\n".join(f"{seg.get('speaker','?')}: {seg.get('text','')}" for seg in segments)
 
-    # Pending actions
+    # ── Pending actions ──
     pending = s.get("pending_actions", []) or []
-    pa_texts = []
-    pa_detail_texts = []
+    pa_texts, pa_detail_texts = [], []
     for i, pa in enumerate(pending):
         pa_texts.append(f"[{pa.get('type','')}] {pa.get('action_item','')} (owner: {pa.get('owner','')}, due: {pa.get('due_at','')})")
-        pa_detail_texts.append(f"PA #{i+1}:\n  Type: {pa.get('type','')}\n  Action: {pa.get('action_item','')}\n  Owner: {pa.get('owner','')}\n  Due: {pa.get('due_at','')}\n  Confidence: {pa.get('confidence','')}")
+        pa_detail_texts.append(
+            f"PA #{i+1}:\n  Type: {pa.get('type','')}\n  Action: {pa.get('action_item','')}\n"
+            f"  Owner: {pa.get('owner','')}\n  Due: {pa.get('due_at','')}\n  Confidence: {pa.get('confidence','')}"
+        )
 
     # Validate pending actions vs transcript
     pa_vs_transcript = "N/A - No actions"
@@ -182,81 +184,177 @@ def extract_row(summary, detail):
             action = (pa.get("action_item") or "").lower()
             raw_words = [w for w in raw.split() if len(w) > 3]
             action_words = [w for w in action.split() if len(w) > 3]
-            rm = (sum(1 for w in raw_words if w in tl) / max(len(raw_words),1)) >= 0.5 if raw_words else raw in tl
-            am = (sum(1 for w in action_words if w in tl) / max(len(action_words),1)) >= 0.4 if action_words else False
+            rm = (sum(1 for w in raw_words if w in tl) / max(len(raw_words), 1)) >= 0.5 if raw_words else raw in tl
+            am = (sum(1 for w in action_words if w in tl) / max(len(action_words), 1)) >= 0.4 if action_words else False
             ok = rm or am
             if not ok: all_pass = False
             val_lines.append(f"PA #{i+1} [{pa.get('type','')}]: {'PASS' if ok else 'FAIL'}")
         pa_vs_transcript = "PASS" if all_pass else "FAIL"
         pa_validation = "\n".join(val_lines)
 
-    # Objections
+    # ── Objections ──
     objs = obj_data.get("objections", []) or []
     obj_texts = []
     for o in objs:
         ov = "Resolved" if o.get("overcome") else "Unresolved"
-        obj_texts.append(f"[{o.get('category_text','')}] \"{o.get('objection_text','')[:100]}\" ({ov}, {o.get('severity','')})")
+        obj_texts.append(
+            f"[{o.get('category_text','')}] \"{o.get('objection_text','')[:120]}\" "
+            f"({ov}, sev={o.get('severity','')}, conf={o.get('confidence_score','')})"
+        )
+    obj_detail_texts = []
+    for i, o in enumerate(objs):
+        obj_detail_texts.append(
+            f"Obj #{i+1}: [{o.get('category_text','')}]\n"
+            f"  Text: {o.get('objection_text','')}\n"
+            f"  Sub-objection: {o.get('sub_objection','')}\n"
+            f"  Overcome: {o.get('overcome')}\n"
+            f"  Severity: {o.get('severity','')}\n"
+            f"  Confidence: {o.get('confidence_score','')}\n"
+            f"  Timestamp: {o.get('timestamp','')}\n"
+            f"  Suggestions: {'; '.join(o.get('response_suggestions') or [])}"
+        )
 
-    # Tags
+    # ── Tags ──
     tags = set()
     for field in [q.get("qualification_status"), q.get("booking_status"), q.get("detected_call_type"), q.get("service_requested")]:
         if field: tags.add(str(field))
 
-    # CSR Agent
+    # ── CSR Agent ──
     rep = extract_rep_name(segments)
     meta = summary.get("metadata") or (detail.get("metadata") if detail else {}) or {}
     agent = (meta.get("agent") or {})
     metadata_rep = agent.get("name") or meta.get("rep_name", "")
 
-    # Build row matching reference format
-    row["Call Received"] = summary.get("processed_at") or (detail.get("call_date") if detail else "")
-    row["audio_url"] = ""  # filled by caller
-    row["CSR - Agent"] = rep or metadata_rep or ""
-    row["Customer"] = q.get("customer_name", "")
-    row["Phone number"] = q.get("customer_phone", "")
-    row["Qualified"] = q.get("qualification_status", "")
-    row["Service Offered"] = q.get("service_requested", "")
-    row["Booked"] = q.get("booking_status", "")
-    row["Objections and references"] = "\n".join(obj_texts) if obj_texts else "No"
-    row["Tags"] = ", ".join(tags)
-    row["Call_ID"] = ""  # filled by caller
-    row["Call Type"] = q.get("detected_call_type", "")
-    row["Customer_type"] = "Existing" if q.get("is_existing_customer") else "New" if q.get("is_existing_customer") is False else ""
-    row["Transcript"] = transcript_text
-    row["Pending Actions Count"] = len(pending)
-    row["Pending Actions"] = "\n".join(pa_texts)
-    row["Pending Actions Detail"] = "\n\n".join(pa_detail_texts)
-    row["Pending Actions vs Transcript"] = pa_vs_transcript
-    row["Pending Actions Validation"] = pa_validation
-    row["Appointment Confirmed"] = "Yes" if q.get("appointment_confirmed") else "No"
-    row["Scope Classification"] = q.get("scope_classification", "")
+    # ═══════════════════════════════════════════════
+    # SECTION 1 — CALL OVERVIEW (from detail API)
+    # ═══════════════════════════════════════════════
+    row["Call_ID"]              = ""  # filled by caller
+    row["audio_url"]            = ""  # filled by caller
+    row["Call Received"]        = summary.get("processed_at") or (detail.get("call_date") if detail else "")
+    row["Processed At"]         = summary.get("processed_at", "")
+    row["Created At"]           = detail.get("created_at", "") if detail else ""
+    row["Call Date"]            = detail.get("call_date", "") if detail else ""
+    row["Status"]               = summary.get("status", "")
+    row["Phone number"]         = (detail.get("phone_number", "") if detail else "") or q.get("customer_phone", "")
+    row["Rep Role"]             = detail.get("rep_role", "") if detail else ""
+    row["Duration (s)"]         = detail.get("duration", "")   if detail else ""
+    row["Duration (ms)"]        = detail.get("duration_ms", "") if detail else ""
+    row["CSR - Agent"]          = rep or metadata_rep or ""
+    row["Agent ID"]             = agent.get("id", "")
+    row["Agent Email"]          = agent.get("email", "") or meta.get("rep_email", "")
 
-    # Extra fields for comparison
-    row["Summary"] = s.get("summary", "")
-    row["Key Points"] = "\n".join(s.get("key_points", []) or [])
-    row["Action Items"] = "\n".join(s.get("action_items", []) or [])
-    row["Next Steps"] = "\n".join(s.get("next_steps", []) or [])
-    row["Sentiment Score"] = s.get("sentiment_score")
-    row["Confidence Score"] = s.get("confidence_score")
-    row["Compliance Score"] = sop.get("score")
-    row["Compliance Rate"] = sop.get("compliance_rate")
-    row["Stages Followed"] = ", ".join(stages.get("followed", []) or [])
-    row["Stages Missed"] = ", ".join(stages.get("missed", []) or [])
-    row["Coaching Issues"] = "\n".join(f"[{ci.get('severity','')}] {ci.get('issue','')}" for ci in (sop.get("coaching_issues") or []))
-    row["Objections Count"] = obj_data.get("total_count", len(objs))
-    row["BANT Budget"] = bant.get("budget")
-    row["BANT Authority"] = bant.get("authority")
-    row["BANT Need"] = bant.get("need")
-    row["BANT Timeline"] = bant.get("timeline")
-    row["BANT Overall"] = q.get("overall_score")
-    row["Lead Score"] = lead.get("total_score")
-    row["Lead Band"] = lead.get("lead_band", "")
-    row["Call Outcome"] = q.get("call_outcome_category", "")
-    row["Appointment Date"] = q.get("appointment_date", "")
-    row["Follow Up Required"] = q.get("follow_up_required")
-    row["Follow Up Reason"] = q.get("follow_up_reason", "")
-    row["Service Address"] = q.get("service_address_raw", "")
-    row["Processed At"] = summary.get("processed_at", "")
+    # ═══════════════════════════════════════════════
+    # SECTION 2 — QUALIFICATION
+    # ═══════════════════════════════════════════════
+    row["Customer"]                     = q.get("customer_name", "")
+    row["Customer Name Confidence"]     = q.get("customer_name_confidence", "")
+    row["Customer_type"]                = "Existing" if q.get("is_existing_customer") else "New" if q.get("is_existing_customer") is False else ""
+    row["Decision Makers"]              = ", ".join(str(d) for d in (q.get("decision_makers") or []))
+    row["Qualified"]                    = q.get("qualification_status", "")
+    row["BANT Overall Score"]           = q.get("overall_score", "")
+    row["BANT Budget"]                  = bant.get("budget", "")
+    row["BANT Authority"]               = bant.get("authority", "")
+    row["BANT Need"]                    = bant.get("need", "")
+    row["BANT Timeline"]                = bant.get("timeline", "")
+    row["Urgency Signals"]              = "\n".join(q.get("urgency_signals") or [])
+    row["Budget Indicators"]            = "\n".join(q.get("budget_indicators") or [])
+    row["Qualification Confidence"]     = q.get("confidence_score", "")
+
+    # ═══════════════════════════════════════════════
+    # SECTION 3 — CALL TYPE & SCOPE
+    # ═══════════════════════════════════════════════
+    row["Call Type"]                    = q.get("detected_call_type", "")
+    row["Scope Classification"]         = q.get("scope_classification", "")
+    row["Scope Reason"]                 = q.get("scope_reason", "")
+    row["Scope Confidence"]             = q.get("scope_confidence", "")
+    row["Scope Signals"]                = "\n".join(q.get("scope_signals") or [])
+    row["Service Offered"]              = q.get("service_requested", "")
+    row["Service Not Offered Reason"]   = q.get("service_not_offered_reason", "")
+    row["Deferred Reason"]              = q.get("deferred_reason", "")
+    row["Call Outcome"]                 = q.get("call_outcome_category", "")
+
+    # ═══════════════════════════════════════════════
+    # SECTION 4 — BOOKING & APPOINTMENT
+    # ═══════════════════════════════════════════════
+    row["Booked"]                       = q.get("booking_status", "")
+    row["Appointment Confirmed"]        = "Yes" if q.get("appointment_confirmed") else "No"
+    row["Appointment Date"]             = q.get("appointment_date", "")
+    row["Appointment Type"]             = q.get("appointment_type", "")
+    row["Appointment Timezone"]         = q.get("appointment_timezone", "")
+    row["Appointment Time Confidence"]  = q.get("appointment_time_confidence", "")
+    row["Preferred Time Window"]        = q.get("preferred_time_window", "")
+    row["Appointment Intent"]           = q.get("appointment_intent", "")
+    row["Original Appointment DateTime"]= q.get("original_appointment_datetime", "")
+    row["New Requested Time"]           = q.get("new_requested_time", "")
+
+    # ═══════════════════════════════════════════════
+    # SECTION 5 — SERVICE ADDRESS
+    # ═══════════════════════════════════════════════
+    row["Service Address"]              = q.get("service_address_raw", "")
+    row["Address Line1"]                = addr.get("line1", "")
+    row["Address City"]                 = addr.get("city", "")
+    row["Address State"]                = addr.get("state", "")
+    row["Address Postal Code"]          = addr.get("postal_code", "")
+    row["Address Country"]              = addr.get("country", "")
+    row["Address Confidence"]           = q.get("address_confidence", "")
+
+    # ═══════════════════════════════════════════════
+    # SECTION 6 — FOLLOW-UP
+    # ═══════════════════════════════════════════════
+    row["Follow Up Required"]           = q.get("follow_up_required", "")
+    row["Follow Up Reason"]             = q.get("follow_up_reason", "")
+
+    # ═══════════════════════════════════════════════
+    # SECTION 7 — SUMMARY
+    # ═══════════════════════════════════════════════
+    row["Summary"]                      = s.get("summary", "")
+    row["Key Points"]                   = "\n".join(s.get("key_points", []) or [])
+    row["Action Items"]                 = "\n".join(s.get("action_items", []) or [])
+    row["Next Steps"]                   = "\n".join(s.get("next_steps", []) or [])
+    row["Sentiment Score"]              = s.get("sentiment_score", "")
+    row["Summary Confidence Score"]     = s.get("confidence_score", "")
+
+    # ═══════════════════════════════════════════════
+    # SECTION 8 — COMPLIANCE / SOP
+    # ═══════════════════════════════════════════════
+    row["Compliance Score"]             = sop.get("score", "")
+    row["Compliance Rate"]              = sop.get("compliance_rate", "")
+    row["Compliance Confidence"]        = sop.get("confidence", "")
+    row["Compliance Target Role"]       = comp_data.get("target_role", "")
+    row["Compliance Eval Mode"]         = comp_data.get("evaluation_mode", "")
+    row["Stages Total"]                 = (stages.get("total", "") if isinstance(stages, dict) else "")
+    row["Stages Followed"]              = ", ".join(stages.get("followed", []) or []) if isinstance(stages, dict) else ""
+    row["Stages Missed"]                = ", ".join(stages.get("missed", []) or []) if isinstance(stages, dict) else ""
+    row["Compliance Issues"]            = "\n".join(sop.get("issues") or [])
+    row["Positive Behaviors"]           = "\n".join(sop.get("positive_behaviors") or [])
+    row["Coaching Issues"]              = "\n".join(
+        f"[{ci.get('severity','')}] {ci.get('issue','')}" for ci in (sop.get("coaching_issues") or [])
+    )
+    row["Coaching Strengths"]           = "\n".join(
+        f"{cs.get('behavior','')}" for cs in (sop.get("coaching_strengths") or [])
+    )
+
+    # ═══════════════════════════════════════════════
+    # SECTION 9 — OBJECTIONS
+    # ═══════════════════════════════════════════════
+    row["Objections Count"]             = obj_data.get("total_count", len(objs))
+    row["Objections and references"]    = "\n".join(obj_texts) if obj_texts else "No"
+    row["Objections Detail"]            = "\n\n".join(obj_detail_texts)
+
+    # ═══════════════════════════════════════════════
+    # SECTION 10 — PENDING ACTIONS
+    # ═══════════════════════════════════════════════
+    row["Pending Actions Count"]        = len(pending)
+    row["Pending Actions"]              = "\n".join(pa_texts)
+    row["Pending Actions Detail"]       = "\n\n".join(pa_detail_texts)
+    row["Pending Actions vs Transcript"]= pa_vs_transcript
+    row["Pending Actions Validation"]   = pa_validation
+
+    # ═══════════════════════════════════════════════
+    # SECTION 11 — TRANSCRIPT & TAGS
+    # ═══════════════════════════════════════════════
+    row["Transcript"]                   = transcript_text
+    row["Tags"]                         = ", ".join(tags)
 
     return row
 
@@ -278,23 +376,49 @@ FAIL_F = PatternFill("solid", fgColor="FFC7CE")
 MATCH_F = PatternFill("solid", fgColor="E2EFDA")
 MISMATCH_F = PatternFill("solid", fgColor="FCE4EC")
 
-# Columns matching reference sheet
+# All API fields — grouped by section
 REF_COLS = [
-    ("Call Received", 18), ("audio_url", 35), ("CSR - Agent", 14), ("Customer", 20),
-    ("Phone number", 16), ("Qualified", 12), ("Service Offered", 30), ("Booked", 12),
-    ("Objections and references", 40), ("Tags", 25), ("Call_ID", 30), ("Call Type", 14),
-    ("Customer_type", 12), ("Transcript", 60), ("Pending Actions Count", 10),
-    ("Pending Actions", 40), ("Pending Actions Detail", 45),
-    ("Pending Actions vs Transcript", 12), ("Pending Actions Validation", 35),
-    ("Appointment Confirmed", 12), ("Scope Classification", 14),
-    ("Summary", 50), ("Key Points", 40), ("Sentiment Score", 10), ("Confidence Score", 10),
-    ("Compliance Score", 10), ("Compliance Rate", 10),
-    ("Stages Followed", 35), ("Stages Missed", 35), ("Coaching Issues", 40),
-    ("Objections Count", 10), ("BANT Budget", 8), ("BANT Authority", 8),
-    ("BANT Need", 8), ("BANT Timeline", 8), ("BANT Overall", 8),
-    ("Lead Score", 8), ("Lead Band", 10), ("Call Outcome", 18),
-    ("Appointment Date", 18), ("Follow Up Required", 10), ("Service Address", 30),
-    ("Processed At", 20),
+    # CALL OVERVIEW
+    ("Call_ID", 32), ("audio_url", 38), ("Call Received", 20), ("Processed At", 20),
+    ("Created At", 20), ("Call Date", 18), ("Status", 12), ("Phone number", 16),
+    ("Rep Role", 14), ("Duration (s)", 10), ("Duration (ms)", 12),
+    ("CSR - Agent", 16), ("Agent ID", 28), ("Agent Email", 28),
+    # QUALIFICATION
+    ("Customer", 22), ("Customer Name Confidence", 12), ("Customer_type", 12),
+    ("Decision Makers", 20), ("Qualified", 14), ("BANT Overall Score", 10),
+    ("BANT Budget", 8), ("BANT Authority", 8), ("BANT Need", 8), ("BANT Timeline", 8),
+    ("Urgency Signals", 35), ("Budget Indicators", 35), ("Qualification Confidence", 10),
+    # CALL TYPE & SCOPE
+    ("Call Type", 16), ("Scope Classification", 16), ("Scope Reason", 40),
+    ("Scope Confidence", 10), ("Scope Signals", 35), ("Service Offered", 30),
+    ("Service Not Offered Reason", 30), ("Deferred Reason", 25), ("Call Outcome", 20),
+    # BOOKING & APPOINTMENT
+    ("Booked", 14), ("Appointment Confirmed", 12), ("Appointment Date", 20),
+    ("Appointment Type", 16), ("Appointment Timezone", 14), ("Appointment Time Confidence", 10),
+    ("Preferred Time Window", 20), ("Appointment Intent", 14),
+    ("Original Appointment DateTime", 22), ("New Requested Time", 22),
+    # SERVICE ADDRESS
+    ("Service Address", 35), ("Address Line1", 25), ("Address City", 16),
+    ("Address State", 10), ("Address Postal Code", 12), ("Address Country", 10),
+    ("Address Confidence", 10),
+    # FOLLOW-UP
+    ("Follow Up Required", 10), ("Follow Up Reason", 40),
+    # SUMMARY
+    ("Summary", 55), ("Key Points", 45), ("Action Items", 35), ("Next Steps", 35),
+    ("Sentiment Score", 10), ("Summary Confidence Score", 10),
+    # COMPLIANCE / SOP
+    ("Compliance Score", 10), ("Compliance Rate", 10), ("Compliance Confidence", 10),
+    ("Compliance Target Role", 16), ("Compliance Eval Mode", 14),
+    ("Stages Total", 8), ("Stages Followed", 40), ("Stages Missed", 40),
+    ("Compliance Issues", 50), ("Positive Behaviors", 50),
+    ("Coaching Issues", 50), ("Coaching Strengths", 50),
+    # OBJECTIONS
+    ("Objections Count", 10), ("Objections and references", 50), ("Objections Detail", 60),
+    # PENDING ACTIONS
+    ("Pending Actions Count", 10), ("Pending Actions", 45), ("Pending Actions Detail", 55),
+    ("Pending Actions vs Transcript", 12), ("Pending Actions Validation", 40),
+    # TRANSCRIPT & TAGS
+    ("Transcript", 70), ("Tags", 30),
 ]
 
 # Comparison tab columns
@@ -321,17 +445,79 @@ CMP_COLS = [
 ]
 
 
+SECTION_GROUPS = [
+    ("CALL OVERVIEW", ["Call_ID","audio_url","Call Received","Processed At","Created At","Call Date","Status","Phone number","Rep Role","Duration (s)","Duration (ms)","CSR - Agent","Agent ID","Agent Email"]),
+    ("QUALIFICATION", ["Customer","Customer Name Confidence","Customer_type","Decision Makers","Qualified","BANT Overall Score","BANT Budget","BANT Authority","BANT Need","BANT Timeline","Urgency Signals","Budget Indicators","Qualification Confidence"]),
+    ("CALL TYPE & SCOPE", ["Call Type","Scope Classification","Scope Reason","Scope Confidence","Scope Signals","Service Offered","Service Not Offered Reason","Deferred Reason","Call Outcome"]),
+    ("BOOKING & APPOINTMENT", ["Booked","Appointment Confirmed","Appointment Date","Appointment Type","Appointment Timezone","Appointment Time Confidence","Preferred Time Window","Appointment Intent","Original Appointment DateTime","New Requested Time"]),
+    ("SERVICE ADDRESS", ["Service Address","Address Line1","Address City","Address State","Address Postal Code","Address Country","Address Confidence"]),
+    ("FOLLOW-UP", ["Follow Up Required","Follow Up Reason"]),
+    ("SUMMARY", ["Summary","Key Points","Action Items","Next Steps","Sentiment Score","Summary Confidence Score"]),
+    ("COMPLIANCE / SOP", ["Compliance Score","Compliance Rate","Compliance Confidence","Compliance Target Role","Compliance Eval Mode","Stages Total","Stages Followed","Stages Missed","Compliance Issues","Positive Behaviors","Coaching Issues","Coaching Strengths"]),
+    ("OBJECTIONS", ["Objections Count","Objections and references","Objections Detail"]),
+    ("PENDING ACTIONS", ["Pending Actions Count","Pending Actions","Pending Actions Detail","Pending Actions vs Transcript","Pending Actions Validation"]),
+    ("TRANSCRIPT & TAGS", ["Transcript","Tags"]),
+]
+
+SECTION_FILLS = {
+    "CALL OVERVIEW":        PatternFill("solid", fgColor="1F4E79"),
+    "QUALIFICATION":        PatternFill("solid", fgColor="375623"),
+    "CALL TYPE & SCOPE":    PatternFill("solid", fgColor="7B3F00"),
+    "BOOKING & APPOINTMENT":PatternFill("solid", fgColor="4A235A"),
+    "SERVICE ADDRESS":      PatternFill("solid", fgColor="1A5276"),
+    "FOLLOW-UP":            PatternFill("solid", fgColor="922B21"),
+    "SUMMARY":              PatternFill("solid", fgColor="0B5345"),
+    "COMPLIANCE / SOP":     PatternFill("solid", fgColor="4D4D4D"),
+    "OBJECTIONS":           PatternFill("solid", fgColor="784212"),
+    "PENDING ACTIONS":      PatternFill("solid", fgColor="154360"),
+    "TRANSCRIPT & TAGS":    PatternFill("solid", fgColor="212F3C"),
+}
+
+
 def write_data_sheet(wb, title, rows, header_fill):
     ws = wb.create_sheet(title)
-    ws.freeze_panes = "A2"
-    for ci, (name, width) in enumerate(REF_COLS, 1):
-        c = ws.cell(row=1, column=ci, value=name)
-        c.font = H_FONT; c.fill = header_fill; c.alignment = CENTER_WRAP; c.border = THIN
-        ws.column_dimensions[get_column_letter(ci)].width = width
-    for ri, row in enumerate(rows, 2):
-        for ci, (name, _) in enumerate(REF_COLS, 1):
-            c = ws.cell(row=ri, column=ci, value=row.get(name, ""))
+    ws.freeze_panes = "C3"  # freeze past call_id + audio_url, past header rows
+
+    col_to_section = {}
+    for sec, fields in SECTION_GROUPS:
+        for f in fields:
+            col_to_section[f] = sec
+
+    # Row 1: section labels (merged spans)
+    # Row 2: field names
+    col_idx = 1
+    for sec, fields in SECTION_GROUPS:
+        sec_fill = SECTION_FILLS.get(sec, BLUE)
+        start_col = col_idx
+        for field in fields:
+            ws.column_dimensions[get_column_letter(col_idx)].width = dict(REF_COLS).get(field, 18)
+            # Row 2 — field header
+            c2 = ws.cell(row=2, column=col_idx, value=field)
+            c2.font = H_FONT; c2.fill = sec_fill; c2.alignment = CENTER_WRAP; c2.border = THIN
+            col_idx += 1
+        # Row 1 — section header (merged)
+        end_col = col_idx - 1
+        ws.merge_cells(start_row=1, start_column=start_col, end_row=1, end_column=end_col)
+        c1 = ws.cell(row=1, column=start_col, value=sec)
+        c1.font = Font(bold=True, color="FFFFFF", size=11)
+        c1.fill = sec_fill
+        c1.alignment = Alignment(horizontal="center", vertical="center")
+        c1.border = THIN
+
+    # Data rows start at row 3
+    col_names = [name for name, _ in REF_COLS]
+    for ri, row in enumerate(rows, 3):
+        for ci, name in enumerate(col_names, 1):
+            val = row.get(name, "")
+            c = ws.cell(row=ri, column=ci, value=val)
             c.alignment = WRAP; c.border = THIN
+        # Alternate row shading
+        if ri % 2 == 0:
+            for ci in range(1, len(col_names) + 1):
+                ws.cell(row=ri, column=ci).fill = PatternFill("solid", fgColor="F5F5F5")
+
+    ws.row_dimensions[1].height = 22
+    ws.row_dimensions[2].height = 30
     return ws
 
 
