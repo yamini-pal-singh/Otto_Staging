@@ -561,9 +561,17 @@ def write_comparison_sheet(wb, prod_rows, staging_rows):
             if abs(gc - oc) > 2: issues.append(f"Objections: {oc} vs {gc}")
         except: pass
 
+        # Check if staging has actual data (not just a call_id with empty fields)
+        staging_has_data = bool(sr.get("Booked") or sr.get("Call Type") or sr.get("Qualified") or sr.get("Summary"))
+        prod_has_data    = bool(pr.get("Booked") or pr.get("Call Type") or pr.get("Qualified") or pr.get("Summary"))
+
         has_high = any("Booking" in i or "Call Type" in i for i in issues)
         if not pr.get("Call_ID") or not sr.get("Call_ID"):
             verdict = "N/A"; failure = "Missing data"
+        elif not staging_has_data:
+            verdict = "N/A"; failure = "Staging API returned no data (processing error)"
+        elif not prod_has_data:
+            verdict = "N/A"; failure = "Production API returned no data (processing error)"
         elif has_high:
             verdict = "FAIL"; failure = " | ".join(issues)
         elif len(issues) > 2:
